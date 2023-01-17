@@ -23,6 +23,7 @@ describe("Permit2 test", function () {
     const nonce = (await permit.allowance(signer.address, token.address, vault.address)).expiration;
 
     await token.mint(signer.address, depositAmount);
+    await token.approve(permit.address, depositAmount);
 
     const message: Omit<PermitTransferFrom, "spender"> = {
       permitted: {
@@ -34,12 +35,12 @@ describe("Permit2 test", function () {
       //spender: vault.address,
     };
 
-    const digest = SignatureTransfer.hash(
+    const {domain, types, values} = SignatureTransfer.getPermitData(
       {...message, spender: vault.address},
       permit.address,
       chainId
     );
-    const signature = await signer.signMessage(digest);
+    const signature = await signer._signTypedData(domain, types, values);
 
     await vault.connect(signer).depositERC20(token.address, depositAmount, message, signature);
   });
